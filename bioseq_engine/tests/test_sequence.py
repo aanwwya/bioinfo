@@ -199,3 +199,10 @@ def test_fasta_record_empty_id():
 
     with pytest.raises(ValueError):
         FastaRecord("", sequence)
+        
+        
+        
+def test_sequence_length():
+    dna = Sequence("ATGCGATC")
+
+    assert dna.length == 8

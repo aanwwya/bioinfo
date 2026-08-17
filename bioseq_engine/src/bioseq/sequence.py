@@ -32,6 +32,10 @@ class Sequence:
 
     def __len__(self) -> int:
         return len(self._sequence)
+    
+    @property
+    def length(self) -> int:
+        return len(self._sequence)
 
     def __getitem__(self, index):
         result = self._sequence[index]
