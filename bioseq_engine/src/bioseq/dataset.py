@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from bioseq_engine.src.bioseq.fasta_record import FastaRecord
 
+from bioseq_engine.src.bioseq.kmp import kmp_search
+
 
 @dataclass
 class DatasetStats:
@@ -34,3 +36,32 @@ def calculate_stats(records: list[FastaRecord]) -> DatasetStats:
         longest_length=max(lengths),
         gc_content=(gc_bases / total_bases) * 100,
     )
+    
+def longest_record(records: list[FastaRecord]) -> FastaRecord:
+    if not records:
+        raise ValueError("records cannot be empty")
+
+    return max(records, key=lambda record: len(record.sequence))
+
+def shortest_record(records: list[FastaRecord]) -> FastaRecord:
+    if not records:
+        raise ValueError("records cannot be empty")
+
+    return min(records, key=lambda record: len(record.sequence))
+
+def find_motif(
+    records: list[FastaRecord],
+    motif: str,
+) -> dict[str, list[int]]:
+    if not motif:
+        raise ValueError("motif cannot be empty")
+
+    results = {}
+
+    for record in records:
+        results[record.record_id] = kmp_search(
+            record.sequence.sequence,
+            motif.upper(),
+        )
+
+    return results
