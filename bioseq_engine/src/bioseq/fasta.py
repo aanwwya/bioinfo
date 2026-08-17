@@ -31,3 +31,31 @@ def parse_fasta(text: str) -> list[tuple[str, Sequence]]:
         records.append((name, Sequence(sequence)))
 
     return records
+
+
+def read_fasta(path: str):
+    name = None
+    sequence_parts = []
+
+    with open(path, "r") as file:
+        for line in file:
+            line = line.strip()
+
+            if not line:
+                continue
+
+            if line.startswith(">"):
+                if name is not None:
+                    yield name, Sequence("".join(sequence_parts))
+
+                name = line[1:].strip()
+                sequence_parts = []
+
+            else:
+                if name is None:
+                    raise ValueError("FASTA sequence found before header")
+
+                sequence_parts.append(line)
+
+    if name is not None:
+        yield name, Sequence("".join(sequence_parts))

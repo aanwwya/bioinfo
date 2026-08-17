@@ -8,8 +8,8 @@ from bioseq_engine.src.bioseq.analysis import (
     nucleotide_composition,
     gc_content,
 )
-from bioseq_engine.src.bioseq.fasta import parse_fasta
 
+from bioseq_engine.src.bioseq.fasta import parse_fasta, read_fasta
 
 def test_sequence():
     dna = Sequence("ATGCGATC")
@@ -142,3 +142,36 @@ GCTA
 
     with pytest.raises(ValueError):
         parse_fasta(text)
+        
+        
+def test_read_fasta(tmp_path):
+    fasta_file = tmp_path / "sample.fasta"
+
+    fasta_file.write_text(
+        ">gene1\n"
+        "ATGC\n"
+        ">gene2\n"
+        "TTAA\n"
+    )
+
+    records = list(read_fasta(str(fasta_file)))
+
+    assert len(records) == 2
+    assert records[0][0] == "gene1"
+    assert records[0][1].sequence == "ATGC"
+    assert records[1][0] == "gene2"
+    assert records[1][1].sequence == "TTAA"
+
+
+def test_read_fasta_multiline(tmp_path):
+    fasta_file = tmp_path / "sample.fasta"
+
+    fasta_file.write_text(
+        ">gene1\n"
+        "ATGC\n"
+        "GCTA\n"
+    )
+
+    records = list(read_fasta(str(fasta_file)))
+
+    assert records[0][1].sequence == "ATGCGCTA"
