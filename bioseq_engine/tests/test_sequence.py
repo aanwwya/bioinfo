@@ -8,8 +8,9 @@ from bioseq_engine.src.bioseq.analysis import (
     nucleotide_composition,
     gc_content,
 )
-
 from bioseq_engine.src.bioseq.fasta import parse_fasta, read_fasta
+from bioseq_engine.src.bioseq.fasta_record import FastaRecord
+
 
 def test_sequence():
     dna = Sequence("ATGCGATC")
@@ -117,10 +118,10 @@ TTAA
     records = parse_fasta(text)
 
     assert len(records) == 2
-    assert records[0][0] == "gene1"
-    assert records[0][1].sequence == "ATGC"
-    assert records[1][0] == "gene2"
-    assert records[1][1].sequence == "TTAA"
+    assert records[0].record_id == "gene1"
+    assert records[0].sequence.sequence == "ATGC"
+    assert records[1].record_id == "gene2"
+    assert records[1].sequence.sequence == "TTAA"
 
 
 def test_parse_fasta_multiline_sequence():
@@ -131,7 +132,8 @@ GCTA
 
     records = parse_fasta(text)
 
-    assert records[0][1].sequence == "ATGCGCTA"
+    assert records[0].record_id == "gene1"
+    assert records[0].sequence.sequence == "ATGCGCTA"
 
 
 def test_parse_fasta_sequence_before_header():
@@ -142,8 +144,8 @@ GCTA
 
     with pytest.raises(ValueError):
         parse_fasta(text)
-        
-        
+
+
 def test_read_fasta(tmp_path):
     fasta_file = tmp_path / "sample.fasta"
 
@@ -157,10 +159,10 @@ def test_read_fasta(tmp_path):
     records = list(read_fasta(str(fasta_file)))
 
     assert len(records) == 2
-    assert records[0][0] == "gene1"
-    assert records[0][1].sequence == "ATGC"
-    assert records[1][0] == "gene2"
-    assert records[1][1].sequence == "TTAA"
+    assert records[0].record_id == "gene1"
+    assert records[0].sequence.sequence == "ATGC"
+    assert records[1].record_id == "gene2"
+    assert records[1].sequence.sequence == "TTAA"
 
 
 def test_read_fasta_multiline(tmp_path):
@@ -174,4 +176,26 @@ def test_read_fasta_multiline(tmp_path):
 
     records = list(read_fasta(str(fasta_file)))
 
-    assert records[0][1].sequence == "ATGCGCTA"
+    assert records[0].record_id == "gene1"
+    assert records[0].sequence.sequence == "ATGCGCTA"
+
+
+def test_fasta_record():
+    sequence = Sequence("ATGC")
+
+    record = FastaRecord(
+        record_id="gene1",
+        sequence=sequence,
+        description="example gene",
+    )
+
+    assert record.record_id == "gene1"
+    assert record.sequence.sequence == "ATGC"
+    assert record.description == "example gene"
+
+
+def test_fasta_record_empty_id():
+    sequence = Sequence("ATGC")
+
+    with pytest.raises(ValueError):
+        FastaRecord("", sequence)
