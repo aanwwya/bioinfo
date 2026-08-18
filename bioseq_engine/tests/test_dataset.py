@@ -8,8 +8,8 @@ from bioseq_engine.src.bioseq.dataset import (
     longest_record,
     shortest_record,
     find_motif,
+    find_motifs,
 )
-
 
 def test_calculate_stats():
     records = [
@@ -85,4 +85,35 @@ def test_find_motif():
     assert results == {
         "gene1": [0, 5],
         "gene2": [],
+    }
+    
+    
+def test_find_motifs():
+    records = [
+        FastaRecord(
+            record_id="gene1",
+            sequence=Sequence("ATGCGATG"),
+        ),
+        FastaRecord(
+            record_id="gene2",
+            sequence=Sequence("GGCATG"),
+        ),
+    ]
+
+    results = find_motifs(
+        records,
+        ["ATG", "GGC", "TAA"],
+    )
+
+    assert results == {
+        "gene1": {
+            "ATG": [0, 5],
+            "GGC": [],
+            "TAA": [],
+        },
+        "gene2": {
+            "ATG": [3],
+            "GGC": [0],
+            "TAA": [],
+        },
     }

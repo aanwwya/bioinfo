@@ -65,3 +65,30 @@ def find_motif(
         )
 
     return results
+
+def find_motifs(
+    records: list[FastaRecord],
+    motifs: list[str],
+) -> dict[str, dict[str, list[int]]]:
+    if not motifs:
+        raise ValueError("motifs cannot be empty")
+
+    results = {}
+
+    normalized_motifs = [motif.upper() for motif in motifs]
+
+    for record in records:
+        results[record.record_id] = {}
+
+        sequence = record.sequence.sequence
+
+        for motif in normalized_motifs:
+            if not motif:
+                raise ValueError("motif cannot be empty")
+
+            results[record.record_id][motif] = kmp_search(
+                sequence,
+                motif,
+            )
+
+    return results

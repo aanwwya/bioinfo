@@ -206,3 +206,19 @@ def test_sequence_length():
     dna = Sequence("ATGCGATC")
 
     assert dna.length == 8
+    
+    
+def test_motif_search_engine():
+    from bioseq_engine.src.bioseq.search import MotifSearchEngine
+    from bioseq_engine.src.bioseq.fasta import read_fasta
+
+    records = list(
+        read_fasta("bioseq_engine/data/sample.fasta")
+    )
+
+    engine = MotifSearchEngine(["ATGC", "GCG"])
+
+    results = engine.search_dataset(records)
+
+    assert results["gene_1"]["ATGC"] == [0, 5]
+    assert results["gene_1"]["GCG"] == [2, 7]

@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bioseq-engine"
+version = "0.1.0"
+description = "A Python bioinformatics engine for DNA sequence analysis and efficient motif searching"
+requires-python = ">=3.10"
+
+[tool.setuptools]
+packages = [
+    "bioseq_engine",
+    "bioseq_engine.src",
+    "bioseq_engine.src.bioseq",
+]
+
+[tool.setuptools.package-dir]
+bioseq_engine = "."
+
+[project.scripts]
+bioseq = "bioseq_engine.src.bioseq.cli:main"
