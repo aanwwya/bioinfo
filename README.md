@@ -1,117 +1,159 @@
 # bioseq engine
 
-a small bioinformatics sequence-analysis engine built from scratch in python.
+a small dna sequence analysis engine written in python.
 
-## what it does
+i built this project from scratch to understand how common sequence analysis and pattern matching tools work internally. it can read fasta files, validate dna sequences, calculate basic sequence statistics, and search for dna motifs.
 
-bioseq engine can:
+the search side of the project includes naive search, kmp, and aho corasick, with benchmarks to compare how they behave as the number of motifs increases.
 
-* parse dna sequences from fasta files
-* validate dna sequences
-* calculate nucleotide composition
-* calculate gc content
-* find the shortest and longest sequences in a dataset
-* search for dna motifs
-* find overlapping motif matches
-* search for multiple motifs efficiently
-* compare different string-search algorithms
-* provide a command-line interface
+## about
 
-## algorithms
+bioseq engine is built around a simple idea: take a collection of dna sequences and make it easy to inspect and search them.
 
-the project implements three approaches to sequence searching.
+the project handles things like:
 
-### naive search
+• dna validation
+• fasta parsing
+• nucleotide composition
+• gc content
+• sequence statistics
+• single motif searching
+• multiple motif searching
+• overlapping matches
+• kmp pattern matching
+• aho corasick pattern matching
+• command line usage
+• performance benchmarking
 
-checks every possible position in the sequence and compares the pattern directly.
+the main focus of the project is the search engine. instead of using an existing pattern matching library, the algorithms are implemented directly in python.
 
-simple to understand, but becomes slower as the sequence and number of searches grow.
+## performance results
 
-### kmp
+the main benchmark compares kmp against aho corasick while increasing the number of motifs.
 
-**knuth-morris-pratt**
+| motifs |     kmp | aho corasick | speedup |
+| -----: | ------: | -----------: | ------: |
+|      8 |  3.47 s |       0.94 s |   3.69x |
+|     16 |  6.32 s |       1.20 s |   5.27x |
+|     32 | 12.33 s |       1.21 s |  10.16x |
+|     64 | 20.68 s |       1.31 s |  15.82x |
+|    128 | 41.20 s |       1.53 s |  26.97x |
 
-uses a longest-prefix-suffix (lps) table to avoid repeating unnecessary comparisons.
+the difference becomes much larger as the number of motifs increases.
 
-useful when searching for a single motif efficiently.
+with kmp, each motif is searched separately. aho corasick builds one search structure containing all the motifs and then scans the sequence once.
 
-### aho-corasick
+for this benchmark, that made aho corasick significantly faster when searching many motifs.
 
-builds a trie containing multiple motifs and adds failure links between nodes.
+these numbers are specific to the benchmark setup and can change depending on the machine, sequence size, and motifs being tested.
 
-this allows multiple motifs to be searched simultaneously in a single pass through the sequence.
+## consolidated benchmark results
 
-this is especially useful when working with many motifs.
+| algorithm    | best use case                     | approach                                                         |
+| ------------ | --------------------------------- | ---------------------------------------------------------------- |
+| naive search | simple or small searches          | checks every possible starting position                          |
+| kmp          | searching one pattern efficiently | uses an lps table to skip unnecessary comparisons                |
+| aho corasick | searching many patterns           | uses a trie and failure links to search multiple motifs together |
 
-## benchmark
-
-the project includes benchmarks comparing kmp against aho-corasick when searching for increasing numbers of motifs.
-
-| motifs | kmp (s) | aho-corasick (s) | speedup |
-| -----: | ------: | ---------------: | ------: |
-|      8 |    3.47 |             0.94 |   3.69x |
-|     16 |    6.32 |             1.20 |   5.27x |
-|     32 |   12.33 |             1.21 |  10.16x |
-|     64 |   20.68 |             1.31 |  15.82x |
-|    128 |   41.20 |             1.53 |  26.97x |
-
-as the number of motifs increases, aho-corasick becomes substantially faster than running kmp separately for every motif.
-
-## project structure
+the general pattern from the benchmarks is:
 
 ```text
-bioseq_engine/
-│
-├── benchmarks/
-│   ├── aho_corasick_benchmark.py
-│   ├── benchmark_search.py
-│   ├── comparison.py
-│   ├── kmp_benchmark.py
-│   ├── motif_benchmark.py
-│   └── run_comparison.py
-│
-├── data/
-│   └── sample.fasta
-│
-├── docs/
-│
-├── examples/
-│
-├── src/
-│   └── bioseq/
-│       ├── analysis.py
-│       ├── cli.py
-│       ├── dataset.py
-│       ├── engine.py
-│       ├── fasta.py
-│       ├── fasta_record.py
-│       ├── kmp.py
-│       ├── search.py
-│       ├── sequence.py
-│       ├── trie.py
-│       └── validation.py
-│
-├── tests/
-│   ├── test_cli.py
-│   ├── test_dataset.py
-│   ├── test_engine.py
-│   ├── test_search.py
-│   ├── test_sequence.py
-│   └── test_trie.py
-│
-├── pyproject.toml
-└── README.md
+few motifs
+    |
+    v
+kmp is simple and effective
+
+many motifs
+    |
+    v
+aho corasick becomes more useful
+```
+
+## quick start
+
+clone the repository:
+
+```bash
+git clone https://github.com/aanwwya/bioinfo.git
+cd bioinfo/bioseq_engine
+```
+
+install the package:
+
+```bash
+python -m pip install -e .
+```
+
+run the tests:
+
+```bash
+python -m pytest -v
+```
+
+current test suite:
+
+```text
+46 passed
+```
+
+you can also check that the installed package works:
+
+```bash
+python -c "import bioseq_engine; print('bioseq engine import successful')"
+```
+
+## architecture
+
+```text
+                       fasta file
+                           |
+                           v
+                    +--------------+
+                    | fasta parser |
+                    +--------------+
+                           |
+                           v
+                    +--------------+
+                    | fastarecord  |
+                    +--------------+
+                           |
+                           v
+                    +--------------+
+                    |   sequence   |
+                    +--------------+
+                           |
+              +------------+------------+
+              |                         |
+              v                         v
+       sequence analysis           motif search
+              |                         |
+              |              +----------+----------+
+              |              |          |          |
+              |              v          v          v
+              |           naive       kmp    aho corasick
+              |                                  |
+              |                           +------+------+
+              |                           | trie       |
+              |                           | failure    |
+              |                           | links      |
+              |                           +------+------+
+              |                                  |
+              +----------------+-----------------+
+                               |
+                               v
+                         search results
+                               |
+                    +----------+----------+
+                    |                     |
+                    v                     v
+                   cli                   api
 ```
 
 ## usage
 
-install the package in editable mode:
+the project provides a command line tool called `bioseq`.
 
-```bash
-pip install -e .
-```
-
-then search a fasta file for one or more motifs:
+from inside the `bioseq_engine` directory:
 
 ```bash
 bioseq data/sample.fasta ATGC GCG
@@ -133,95 +175,285 @@ gene_3
   GCG: [0, 9, 11, 13]
 ```
 
-the positions represent the zero-based index where each motif starts.
+the positions are zero based indexes.
 
-## python api
+the cli accepts one or more motifs:
 
-the engine can also be used directly from python:
-
-```python
-from bioseq_engine.src.bioseq.engine import BioSequenceEngine
-
-engine = BioSequenceEngine(["ATGC", "GCG"])
-
-results = engine.search_file(
-    "data/sample.fasta"
-)
-
-print(results)
+```bash
+bioseq data/sample.fasta ATGC
 ```
 
-## fasta support
+or:
 
-bioseq engine supports standard fasta-style records:
+```bash
+bioseq data/sample.fasta ATGC GCG TATA
+```
+
+it also handles invalid input.
+
+for example:
+
+```bash
+bioseq data/sample.fasta ATGX
+```
+
+will reject the motif because `x` is not a valid dna base.
+
+missing fasta files are also reported instead of causing an unhandled python traceback.
+
+## run benchmarks
+
+all benchmark scripts are inside `benchmarks/`.
+
+run the main comparison with:
+
+```bash
+python benchmarks/run_comparison.py
+```
+
+there are separate benchmark files for the different search approaches:
+
+```text
+benchmarks/
+├── aho_corasick_benchmark.py
+├── comparison.py
+├── kmp_benchmark.py
+├── motif_benchmark.py
+└── run_comparison.py
+```
+
+the benchmark setup can be changed to experiment with different numbers of motifs and sequence sizes.
+
+## language baseline
+
+the project is written in python.
+
+python was used because it makes it easier to focus on the algorithms and data structures without adding unnecessary complexity around the implementation.
+
+the core search algorithms do not depend on external bioinformatics libraries.
+
+the main external development dependency is `pytest`, which is used for testing.
+
+## api
+
+the package can also be used directly from python instead of the cli.
+
+for example, creating and analysing a sequence:
+
+```python
+from bioseq_engine.src.bioseq.sequence import Sequence
+from bioseq_engine.src.bioseq.analysis import gc_content
+
+dna = Sequence("ATGCGATC")
+
+print(dna.length)
+print(gc_content(dna))
+```
+
+motif searching:
+
+```python
+from bioseq_engine.src.bioseq.search import MotifSearchEngine
+
+engine = MotifSearchEngine(["ATGC", "GCG"])
+
+results = engine.search_dataset(records)
+```
+
+the project also exposes functionality for:
+
+• fasta parsing
+• sequence validation
+• nucleotide composition
+• gc content
+• dataset statistics
+• longest and shortest records
+• kmp searching
+• trie construction
+• aho corasick searching
+
+## project structure
+
+```text
+bioseq_engine/
+|
+├── benchmarks/
+│   ├── aho_corasick_benchmark.py
+│   ├── comparison.py
+│   ├── kmp_benchmark.py
+│   ├── motif_benchmark.py
+│   └── run_comparison.py
+|
+├── data/
+│   └── sample.fasta
+|
+├── src/
+│   └── bioseq/
+│       ├── analysis.py
+│       ├── cli.py
+│       ├── dataset.py
+│       ├── engine.py
+│       ├── fasta.py
+│       ├── fasta_record.py
+│       ├── kmp.py
+│       ├── search.py
+│       ├── sequence.py
+│       ├── trie.py
+│       └── validation.py
+|
+├── tests/
+│   ├── test_cli.py
+│   ├── test_dataset.py
+│   ├── test_engine.py
+│   ├── test_search.py
+│   ├── test_sequence.py
+│   └── test_trie.py
+|
+├── pyproject.toml
+├── readme.md
+├── license
+└── .gitignore
+```
+
+## technical details
+
+### sequence
+
+the `sequence` class represents a dna sequence and handles basic validation and sequence operations.
+
+it supports:
+
+```python
+dna[0]
+dna[2:6]
+len(dna)
+list(dna)
+```
+
+slicing returns another `sequence` object.
+
+### fasta
+
+the fasta parser supports multiple records and sequences split across multiple lines.
+
+for example:
 
 ```text
 >gene_1
-ATGCGATGC
-
->gene_2
-GGCATGCG
+ATGC
+GCTA
 ```
 
-sequences can span multiple lines and are combined into a single sequence during parsing.
+is read as one sequence:
+
+```text
+ATGCGCTA
+```
+
+each record is represented using `fastarecord`.
+
+### sequence analysis
+
+the analysis module currently provides nucleotide composition and gc content.
+
+for example:
+
+```text
+a = 2
+c = 2
+g = 2
+t = 2
+```
+
+gc content is calculated as:
+
+```text
+(g + c) / total bases × 100
+```
+
+### kmp
+
+kmp uses a longest prefix suffix table to avoid repeating comparisons that have already been made.
+
+the project includes both the lps construction and the actual kmp search implementation.
+
+it also tests kmp against the naive implementation to make sure both approaches return the same matches.
+
+### aho corasick
+
+the aho corasick implementation is used when multiple motifs need to be searched.
+
+the motifs are first inserted into a trie.
+
+failure links are then created between nodes.
+
+the resulting automaton can process a sequence in one pass and report matches for multiple motifs, including overlapping matches.
+
+this is the main reason it performs better than running kmp separately for every motif when the motif count becomes large.
 
 ## testing
 
-the project uses pytest.
+the project currently has 46 tests.
 
-run the complete test suite with:
+they cover:
+
+• sequence creation and validation
+• indexing and slicing
+• sequence iteration
+• nucleotide composition
+• gc content
+• fasta parsing
+• multiline fasta records
+• dataset statistics
+• longest and shortest records
+• motif searching
+• kmp
+• trie construction
+• failure links
+• overlapping matches
+• aho corasick searching
+• cli behaviour
+• missing files
+• invalid motifs
+
+run everything with:
 
 ```bash
 python -m pytest -v
 ```
 
-current test status:
+## requirements
 
-```text
-46 passed
+python 3.12 or newer is recommended.
+
+install the project:
+
+```bash
+python -m pip install -e .
 ```
 
-the tests cover:
+install pytest if it is not already available:
 
-* sequence validation
-* sequence indexing and slicing
-* sequence iteration
-* nucleotide composition
-* gc content
-* naive search
-* kmp search
-* lps construction
-* fasta parsing
-* fasta file reading
-* dataset statistics
-* motif searching
-* trie construction
-* failure links
-* overlapping motif matches
-* cli behaviour
-* invalid input handling
-* missing files
-
-## design goals
-
-the project was built to focus on understanding the underlying algorithms rather than relying on existing bioinformatics libraries.
-
-the main goals are:
-
-* implement core sequence operations from scratch
-* understand string-search algorithms
-* handle real fasta input
-* build reusable python components
-* test each component independently
-* measure algorithm performance
-* expose the functionality through a simple cli
-
-## status
-
-the core engine is complete and fully tested.
-
-```text
-46 tests passed
+```bash
+pip install pytest
 ```
 
-the project currently supports dna sequence analysis, fasta parsing, single and multi-motif searching, algorithm benchmarking, and a packaged command-line interface.
+no external bioinformatics framework is required for the core functionality.
+
+## limitations
+
+the current version focuses on standard dna sequences using:
+
+```text
+a c g t
+```
+
+it does not currently handle the full range of biological sequence formats or ambiguity codes.
+
+the benchmark numbers are also dependent on the machine and dataset used.
+
+## license
+
+this project is licensed under the mit license.
+
+see the `license` file for the full license text.
